@@ -1,5 +1,5 @@
 # xxljob-sdk-rs
 
-xxl-job rust语言的sdk
+rust实现的xxl-job sdk(客户端执行器)
 
 

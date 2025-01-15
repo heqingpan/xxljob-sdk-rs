@@ -2,6 +2,12 @@
 name = "xxljob-sdk-rs"
 version = "0.1.0"
 edition = "2021"
+authors = ["heqingpan <heqingpan@126.com>"]
+license = "MIT/Apache-2.0"
+description = "rust实现的xxl-job sdk(客户端执行器)"
+repository = "https://github.com/heqingpan/xxljob-sdk-rs"
+readme = "README.md"
+keywords = ["xxljob", "xxl-job"]
 
 [dependencies]
 serde = { version = "1", features = ["derive", "rc"] }
