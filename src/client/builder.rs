@@ -1,8 +1,10 @@
 use crate::client::client::XxlClient;
-use crate::common::actor_utils::create_actor_at_thread;
 use crate::common::client_config::ClientConfig;
 use crate::common::share_data::ShareData;
 use crate::executor::core::ExecutorActor;
+use crate::server::web_server::{run_embed_web, ServerRunner};
+use actix::Actor;
+use bean_factory::{BeanDefinition, BeanFactory, FactoryData};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Default)]
@@ -53,7 +55,7 @@ impl ExecutorBuilder {
         self
     }
 
-    pub fn build(self) -> XxlClient {
+    pub fn build(self) -> anyhow::Result<XxlClient> {
         let client_config = Arc::new(ClientConfig {
             server_address: Arc::new(self.server_address),
             access_token: Arc::new(self.access_token.unwrap_or_default()),
@@ -63,11 +65,49 @@ impl ExecutorBuilder {
             log_path: Arc::new(self.log_path.unwrap_or_default()),
             log_retention_days: self.log_retention_days.unwrap_or_default(),
         });
-        let executor_actor = create_actor_at_thread(ExecutorActor::new(client_config.clone()));
-        let share_data = Arc::new(ShareData {
-            client_config: client_config.clone(),
-            executor_actor,
-        });
-        XxlClient::new(client_config, share_data)
+        build_client(client_config)
     }
+}
+
+fn build_client(client_config: Arc<ClientConfig>) -> anyhow::Result<XxlClient> {
+    let (tx, rx) = std::sync::mpsc::sync_channel(1);
+    std::thread::spawn(move || {
+        let r = actix_rt::System::with_tokio_rt(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+        })
+        .block_on(async_init(client_config));
+        tx.send(r).unwrap();
+    });
+    rx.recv()?
+}
+
+fn init_factory(client_config: Arc<ClientConfig>) -> anyhow::Result<BeanFactory> {
+    let factory = BeanFactory::new();
+    factory.register(BeanDefinition::actor_from_obj(
+        ExecutorActor::new(client_config.clone()).start(),
+    ));
+    factory.register(BeanDefinition::actor_with_inject_from_obj(
+        ServerRunner {}.start(),
+    ));
+    factory.register(BeanDefinition::from_obj(client_config.clone()));
+    Ok(factory)
+}
+
+async fn async_init(client_config: Arc<ClientConfig>) -> anyhow::Result<XxlClient> {
+    let factory = init_factory(client_config.clone())?;
+    let factory_data = factory.init().await;
+    let share_data = Arc::new(ShareData {
+        executor_actor: factory_data.get_actor().unwrap(),
+        client_config,
+    });
+    let client = XxlClient::new(share_data.clone());
+    /*
+    tokio::spawn(async move {
+        run_embed_web(share_data).await.ok();
+    });
+     */
+    Ok(client)
 }

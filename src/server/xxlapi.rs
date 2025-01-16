@@ -1,4 +1,4 @@
-use crate::server::model::xxl_api_empty_success;
+use crate::common::model::xxl_api_empty_success;
 use actix_web::{HttpResponse, Responder};
 
 pub(crate) async fn beat() -> impl Responder {

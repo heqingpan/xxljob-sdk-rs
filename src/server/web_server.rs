@@ -1,7 +1,9 @@
 use crate::common::share_data::ShareData;
 use crate::server::xxlapi;
+use actix::prelude::*;
 use actix_web::web::{Data, ServiceConfig};
 use actix_web::{middleware, web, App, HttpServer};
+use bean_factory::{bean, BeanFactory, FactoryData, Inject};
 use std::sync::Arc;
 
 pub fn api_config(config: &mut ServiceConfig) {
@@ -32,4 +34,36 @@ pub async fn run_embed_web(share_data: Arc<ShareData>) -> anyhow::Result<()> {
     .await
     .ok();
     Ok(())
+}
+
+#[bean(inject)]
+pub struct ServerRunner {}
+
+impl Actor for ServerRunner {
+    type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        log::info!("server started");
+    }
+}
+
+impl Inject for ServerRunner {
+    type Context = Context<Self>;
+
+    fn inject(
+        &mut self,
+        factory_data: FactoryData,
+        _factory: BeanFactory,
+        ctx: &mut Self::Context,
+    ) {
+        let share_data = Arc::new(ShareData {
+            executor_actor: factory_data.get_actor().unwrap(),
+            client_config: factory_data.get_bean().unwrap(),
+        });
+        run_embed_web(share_data)
+            .into_actor(self)
+            .map(|res, act, ctx| {})
+            .spawn(ctx);
+        log::info!("api server running");
+    }
 }
