@@ -42,36 +42,51 @@ impl AdminClient {
     }
 
     pub async fn registry(&self) -> anyhow::Result<()> {
+        let address = format!(
+            "http://{}:{}",
+            self.client_config.ip, self.client_config.port
+        );
         let param = RegistryParam {
-            registry_group: self.client_config.app_name.clone(),
+            registry_group: constant::EXECUTOR.clone(),
             registry_key: self.client_config.app_name.clone(),
-            registry_value: constant::EXECUTOR.clone(),
+            registry_value: Arc::new(address),
         };
         let body = serde_json::to_vec(&param)?;
+        log::info!("body:{}", String::from_utf8_lossy(&body));
+        log::info!("headers:{:?}", &self.headers);
         let mut registry_success = false;
         for addr in &self.addrs {
-            let url = format!("http://{}/api/registry", addr);
-            if let Ok(resp) = HttpUtils::request(
+            let url = format!("{}/api/registry", addr);
+            log::info!("url:{}", &url);
+            match HttpUtils::request(
                 &self.client,
-                "post",
+                "POST",
                 &url,
                 body.clone(),
                 Some(&self.headers),
-                None,
+                Some(3000),
             )
             .await
             {
-                if let Ok(v) = Self::convert(&resp) {
-                    if v.is_success() {
-                        registry_success = true;
-                        break;
+                Ok(resp) => {
+                    log::info!("response:{}", resp.get_lossy_string_body());
+                    if let Ok(v) = Self::convert(&resp) {
+                        if v.is_success() {
+                            registry_success = true;
+                            break;
+                        }
                     }
+                }
+                Err(err) => {
+                    log::error!("response error:{}", err);
                 }
             }
         }
         if !registry_success {
+            log::warn!("registry failed");
             Err(anyhow::anyhow!("registry failed"))
         } else {
+            log::info!("registry successfully completed");
             Ok(())
         }
     }

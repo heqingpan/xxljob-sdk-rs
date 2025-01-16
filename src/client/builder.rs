@@ -1,6 +1,8 @@
 use crate::client::client::XxlClient;
+use crate::common::actor_utils::create_actor_at_thread;
 use crate::common::client_config::ClientConfig;
 use crate::common::share_data::ShareData;
+use crate::executor::admin_server::ServerAccessActor;
 use crate::executor::core::ExecutorActor;
 use crate::server::web_server::{run_embed_web, ServerRunner};
 use actix::Actor;
@@ -90,7 +92,11 @@ fn init_factory(client_config: Arc<ClientConfig>) -> anyhow::Result<BeanFactory>
         ExecutorActor::new(client_config.clone()).start(),
     ));
     factory.register(BeanDefinition::actor_with_inject_from_obj(
-        ServerRunner {}.start(),
+        create_actor_at_thread(ServerRunner {}),
+        //ServerRunner {}.start(),
+    ));
+    factory.register(BeanDefinition::actor_with_inject_from_obj(
+        ServerAccessActor::new(client_config.clone()).start(),
     ));
     factory.register(BeanDefinition::from_obj(client_config.clone()));
     Ok(factory)

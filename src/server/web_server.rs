@@ -7,14 +7,12 @@ use bean_factory::{bean, BeanFactory, FactoryData, Inject};
 use std::sync::Arc;
 
 pub fn api_config(config: &mut ServiceConfig) {
-    config.service(
-        web::scope("/xxlapi")
-            .service(web::resource("/beat").route(web::post().to(xxlapi::beat)))
-            .service(web::resource("/idleBeat").route(web::post().to(xxlapi::idle_beat)))
-            .service(web::resource("/run").route(web::post().to(xxlapi::run)))
-            .service(web::resource("/kill").route(web::post().to(xxlapi::kill)))
-            .service(web::resource("/log").route(web::post().to(xxlapi::log))),
-    );
+    config
+        .service(web::resource("/beat").route(web::post().to(xxlapi::beat)))
+        .service(web::resource("/idleBeat").route(web::post().to(xxlapi::idle_beat)))
+        .service(web::resource("/run").route(web::post().to(xxlapi::run)))
+        .service(web::resource("/kill").route(web::post().to(xxlapi::kill)))
+        .service(web::resource("/log").route(web::post().to(xxlapi::log)));
 }
 
 pub async fn run_embed_web(share_data: Arc<ShareData>) -> anyhow::Result<()> {
