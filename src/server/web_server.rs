@@ -56,6 +56,7 @@ impl Inject for ServerRunner {
     ) {
         let share_data = Arc::new(ShareData {
             executor_actor: factory_data.get_actor().unwrap(),
+            server_access_actor: factory_data.get_actor().unwrap(),
             client_config: factory_data.get_bean().unwrap(),
         });
         run_embed_web(share_data)

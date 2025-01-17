@@ -1,4 +1,5 @@
 use crate::common::share_data::ShareData;
+use crate::executor::model::ServerAccessActorReq;
 use std::sync::Arc;
 
 pub struct XxlClient {
@@ -12,5 +13,13 @@ impl XxlClient {
             share_data,
             is_running: false,
         }
+    }
+
+    pub async fn stop(self) -> anyhow::Result<()> {
+        self.share_data
+            .server_access_actor
+            .send(ServerAccessActorReq::Stop)
+            .await??;
+        Ok(())
     }
 }

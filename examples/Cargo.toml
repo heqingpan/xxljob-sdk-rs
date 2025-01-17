@@ -18,3 +18,7 @@ ctrlc = "3.4.0"
 [[example]]
 name = "registry"
 path = "src/registry.rs"
+
+[[example]]
+name = "unregister"
+path = "src/unregister.rs"

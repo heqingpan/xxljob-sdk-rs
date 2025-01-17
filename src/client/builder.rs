@@ -6,9 +6,9 @@ use crate::executor::admin_server::ServerAccessActor;
 use crate::executor::core::ExecutorActor;
 use crate::server::web_server::{run_embed_web, ServerRunner};
 use actix::Actor;
+use actix_rt::System;
 use bean_factory::{BeanDefinition, BeanFactory, FactoryData};
 use std::sync::Arc;
-use actix_rt::System;
 
 #[derive(Clone, Debug, Default)]
 pub struct ExecutorBuilder {
@@ -105,6 +105,7 @@ async fn async_init(client_config: Arc<ClientConfig>) -> anyhow::Result<XxlClien
     let factory_data = factory.init().await;
     let share_data = Arc::new(ShareData {
         executor_actor: factory_data.get_actor().unwrap(),
+        server_access_actor: factory_data.get_actor().unwrap(),
         client_config,
     });
     let client = XxlClient::new(share_data.clone());

@@ -1,7 +1,7 @@
 use crate::common::client_config::ClientConfig;
 use crate::common::constant;
 use crate::common::http_utils::{HttpUtils, ResponseWrap};
-use crate::common::model::admin_request::RegistryParam;
+use crate::common::model::admin_request::{CallbackParam, RegistryParam};
 use crate::common::model::XxlApiResult;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -52,12 +52,35 @@ impl AdminClient {
             registry_value: Arc::new(address),
         };
         let body = serde_json::to_vec(&param)?;
-        log::info!("body:{}", String::from_utf8_lossy(&body));
-        log::info!("headers:{:?}", &self.headers);
+        log::info!("admin_client|registry");
+        self.request(body, "registry").await
+    }
+
+    pub async fn registry_remove(&self) -> anyhow::Result<()> {
+        let address = format!(
+            "http://{}:{}",
+            self.client_config.ip, self.client_config.port
+        );
+        let param = RegistryParam {
+            registry_group: constant::EXECUTOR.clone(),
+            registry_key: self.client_config.app_name.clone(),
+            registry_value: Arc::new(address),
+        };
+        let body = serde_json::to_vec(&param)?;
+        log::info!("admin_client|registryRemove");
+        self.request(body, "registryRemove").await
+    }
+
+    pub async fn callback(&self, params: Vec<CallbackParam>) -> anyhow::Result<()> {
+        let body = serde_json::to_vec(&params)?;
+        log::info!("admin_client|callback");
+        self.request(body, "callback").await
+    }
+
+    async fn request(&self, body: Vec<u8>, sub_url: &str) -> anyhow::Result<()> {
         let mut registry_success = false;
         for addr in &self.addrs {
-            let url = format!("{}/api/registry", addr);
-            log::info!("url:{}", &url);
+            let url = format!("{}/api/{}", addr, &sub_url);
             match HttpUtils::request(
                 &self.client,
                 "POST",
@@ -69,7 +92,6 @@ impl AdminClient {
             .await
             {
                 Ok(resp) => {
-                    log::info!("response:{}", resp.get_lossy_string_body());
                     if let Ok(v) = Self::convert(&resp) {
                         if v.is_success() {
                             registry_success = true;
@@ -78,15 +100,13 @@ impl AdminClient {
                     }
                 }
                 Err(err) => {
-                    log::error!("response error:{}", err);
+                    log::error!("call response error:{},url:{}", err, &url);
                 }
             }
         }
         if !registry_success {
-            log::warn!("registry failed");
             Err(anyhow::anyhow!("registry failed"))
         } else {
-            log::info!("registry successfully completed");
             Ok(())
         }
     }
