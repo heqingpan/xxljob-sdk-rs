@@ -8,6 +8,7 @@ use crate::server::web_server::{run_embed_web, ServerRunner};
 use actix::Actor;
 use bean_factory::{BeanDefinition, BeanFactory, FactoryData};
 use std::sync::Arc;
+use actix_rt::System;
 
 #[derive(Clone, Debug, Default)]
 pub struct ExecutorBuilder {
@@ -74,14 +75,10 @@ impl ExecutorBuilder {
 fn build_client(client_config: Arc<ClientConfig>) -> anyhow::Result<XxlClient> {
     let (tx, rx) = std::sync::mpsc::sync_channel(1);
     std::thread::spawn(move || {
-        let r = actix_rt::System::with_tokio_rt(|| {
-            tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap()
-        })
-        .block_on(async_init(client_config));
+        let rt = System::new();
+        let r = rt.block_on(async_init(client_config));
         tx.send(r).unwrap();
+        rt.run().unwrap();
     });
     rx.recv()?
 }
@@ -92,11 +89,12 @@ fn init_factory(client_config: Arc<ClientConfig>) -> anyhow::Result<BeanFactory>
         ExecutorActor::new(client_config.clone()).start(),
     ));
     factory.register(BeanDefinition::actor_with_inject_from_obj(
-        create_actor_at_thread(ServerRunner {}),
-        //ServerRunner {}.start(),
+        ServerRunner {}.start(),
+        //create_actor_at_thread(ServerRunner {}),
     ));
     factory.register(BeanDefinition::actor_with_inject_from_obj(
         ServerAccessActor::new(client_config.clone()).start(),
+        //create_actor_at_thread(ServerAccessActor::new(client_config.clone())),
     ));
     factory.register(BeanDefinition::from_obj(client_config.clone()));
     Ok(factory)
