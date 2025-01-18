@@ -47,7 +47,16 @@ impl ExecutorActor {
                         }
                         return Ok(ExecutorActorResult::Ok);
                     }
-                    ExecutorBlockStrategy::DiscardLater => return Ok(ExecutorActorResult::Discard),
+                    ExecutorBlockStrategy::DiscardLater => {
+                        job_context.callback_failed_with_info(
+                            format!(
+                                "Discard the job; job_id:{}, log_id:{}",
+                                job_context.job_id, job_context.log_id
+                            ),
+                            FAIL_CODE,
+                        );
+                        return Ok(ExecutorActorResult::Discard);
+                    }
                     ExecutorBlockStrategy::CoverEarly | ExecutorBlockStrategy::Other => {}
                 }
             }
