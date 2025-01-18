@@ -1,5 +1,6 @@
+use crate::common::model::handler::{JobHandler, JobHandlerValue};
 use crate::common::share_data::ShareData;
-use crate::executor::model::ServerAccessActorReq;
+use crate::executor::model::{ExecutorActorReq, ServerAccessActorReq};
 use std::sync::Arc;
 
 pub struct XxlClient {
@@ -20,6 +21,20 @@ impl XxlClient {
             .server_access_actor
             .send(ServerAccessActorReq::Stop)
             .await??;
+        Ok(())
+    }
+
+    pub fn register(
+        &self,
+        job_name: Arc<String>,
+        job_handler: Arc<dyn JobHandler>,
+    ) -> anyhow::Result<()> {
+        self.share_data
+            .executor_actor
+            .do_send(ExecutorActorReq::Register(JobHandlerValue::new(
+                job_name,
+                job_handler,
+            )));
         Ok(())
     }
 }

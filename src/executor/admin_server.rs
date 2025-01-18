@@ -1,6 +1,8 @@
 use crate::client::admin_client::AdminClient;
 use crate::common::client_config::ClientConfig;
 use crate::common::model::admin_request::CallbackParam;
+use crate::common::model::SUCCESS_CODE;
+use crate::common::now_millis_i64;
 use crate::executor::model::{ServerAccessActorReq, ServerAccessActorResult};
 use actix::prelude::*;
 use bean_factory::{bean, BeanFactory, FactoryData, Inject};
@@ -95,6 +97,8 @@ impl Inject for ServerAccessActor {
     }
 }
 
+impl Supervised for ServerAccessActor {}
+
 impl Handler<ServerAccessActorReq> for ServerAccessActor {
     type Result = anyhow::Result<ServerAccessActorResult>;
 
@@ -109,4 +113,36 @@ impl Handler<ServerAccessActorReq> for ServerAccessActor {
         };
         Ok(ServerAccessActorResult::None)
     }
+}
+
+pub(crate) fn do_callback(
+    server_access_actor: &Addr<ServerAccessActor>,
+    param: Vec<CallbackParam>,
+) {
+    server_access_actor.do_send(ServerAccessActorReq::CallBack(param));
+}
+
+pub fn callback_success(server_access_actor: &Addr<ServerAccessActor>, log_id: u64) {
+    let callback_param = CallbackParam {
+        log_id,
+        log_date_tim: now_millis_i64(),
+        handle_code: SUCCESS_CODE,
+        handle_msg: None,
+    };
+    do_callback(server_access_actor, vec![callback_param]);
+}
+
+pub fn callback(
+    server_access_actor: &Addr<ServerAccessActor>,
+    log_id: u64,
+    handle_code: i32,
+    handle_msg: Option<String>,
+) {
+    let callback_param = CallbackParam {
+        log_id,
+        log_date_tim: now_millis_i64(),
+        handle_code,
+        handle_msg,
+    };
+    do_callback(server_access_actor, vec![callback_param]);
 }

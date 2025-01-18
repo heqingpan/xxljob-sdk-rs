@@ -85,7 +85,7 @@ fn build_client(client_config: Arc<ClientConfig>) -> anyhow::Result<XxlClient> {
 
 fn init_factory(client_config: Arc<ClientConfig>) -> anyhow::Result<BeanFactory> {
     let factory = BeanFactory::new();
-    factory.register(BeanDefinition::actor_from_obj(
+    factory.register(BeanDefinition::actor_with_inject_from_obj(
         ExecutorActor::new(client_config.clone()).start(),
     ));
     factory.register(BeanDefinition::actor_with_inject_from_obj(

@@ -4,7 +4,7 @@ use crate::executor::core::ExecutorActor;
 use actix::Addr;
 use std::sync::Arc;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ShareData {
     pub executor_actor: Addr<ExecutorActor>,
     pub server_access_actor: Addr<ServerAccessActor>,
