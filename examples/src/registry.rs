@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use std::sync::Arc;
-use xxljob_sdk_rs::client::builder::ExecutorBuilder;
+use xxljob_sdk_rs::client::builder::XxlClientBuilder;
 use xxljob_sdk_rs::common::model::handler::{JobContext, JobHandler};
 
 pub struct DemoJobHandler;
@@ -37,9 +37,7 @@ async fn main() -> anyhow::Result<()> {
     env_logger::init();
     log::info!("registry start");
     {
-        let client = ExecutorBuilder::new("http://127.0.0.1:8080/xxl-job-admin".to_string())
-            .set_ip("127.0.0.1".to_string())
-            .set_port(9991)
+        let client = XxlClientBuilder::new("http://127.0.0.1:8080/xxl-job-admin".to_string())
             .set_access_token("default_token".to_string())
             .set_log_path("xxl-rs-logs".to_string())
             .set_app_name("xxl-job-executor-sample".to_string())

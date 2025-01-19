@@ -13,6 +13,6 @@ pub struct ClientConfig {
 
 impl ClientConfig {
     pub fn get_http_addr(&self) -> String {
-        format!("{}:{}", self.ip.as_str(), &self.port)
+        format!("0.0.0.0:{}", &self.port)
     }
 }

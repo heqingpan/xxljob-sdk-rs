@@ -19,3 +19,7 @@ async-trait = "0.1"
 [[example]]
 name = "registry"
 path = "src/registry.rs"
+
+[[example]]
+name = "auto_local_addr"
+path = "src/auto_local_addr.rs"

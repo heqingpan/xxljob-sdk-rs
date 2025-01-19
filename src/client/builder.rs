@@ -1,6 +1,7 @@
 use crate::client::client::XxlClient;
 use crate::common::actor_utils::create_actor_at_thread;
 use crate::common::client_config::ClientConfig;
+use crate::common::ip_utils::{get_available_port, get_local_ip};
 use crate::common::share_data::ShareData;
 use crate::executor::admin_server::ServerAccessActor;
 use crate::executor::core::ExecutorActor;
@@ -11,7 +12,7 @@ use bean_factory::{BeanDefinition, BeanFactory, FactoryData};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Default)]
-pub struct ExecutorBuilder {
+pub struct XxlClientBuilder {
     server_address: String,
     access_token: Option<String>,
     app_name: Option<String>,
@@ -21,7 +22,7 @@ pub struct ExecutorBuilder {
     log_retention_days: Option<u32>,
 }
 
-impl ExecutorBuilder {
+impl XxlClientBuilder {
     pub fn new(server_address: String) -> Self {
         Self {
             server_address,
@@ -59,16 +60,38 @@ impl ExecutorBuilder {
     }
 
     pub fn build(self) -> anyhow::Result<XxlClient> {
+        let start_port = 9900;
+        let port = Self::get_port(start_port, self.port);
+        if port == 0 {
+            return Err(anyhow::anyhow!("no available port"));
+        }
         let client_config = Arc::new(ClientConfig {
             server_address: Arc::new(self.server_address),
             access_token: Arc::new(self.access_token.unwrap_or_default()),
-            app_name: Arc::new(self.app_name.unwrap_or_default()),
-            ip: Arc::new(self.ip.unwrap_or_default()),
-            port: self.port.unwrap_or_default(),
+            app_name: Arc::new(self.app_name.unwrap_or("unknown".to_string())),
+            ip: Arc::new(self.ip.unwrap_or(get_local_ip())),
+            port,
             log_path: Arc::new(self.log_path.unwrap_or_default()),
             log_retention_days: self.log_retention_days.unwrap_or_default(),
         });
         build_client(client_config)
+    }
+
+    fn get_port(start_port: u16, option_port: Option<u16>) -> u16 {
+        let port = if let Some(port) = option_port {
+            if port == 0 {
+                let p = get_available_port(start_port);
+                log::info!("auto use port: {}", p);
+                p
+            } else {
+                port
+            }
+        } else {
+            let p = get_available_port(start_port);
+            log::info!("auto use port: {}", p);
+            p
+        };
+        port
     }
 }
 
