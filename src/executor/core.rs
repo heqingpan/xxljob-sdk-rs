@@ -15,6 +15,7 @@ use std::sync::Arc;
 pub struct ExecutorActor {
     client_config: Arc<ClientConfig>,
     job_handler_map: HashMap<Arc<String>, JobHandlerValue>,
+    job_id_map: HashMap<u64, Arc<String>>,
     server_access_actor: Option<Addr<ServerAccessActor>>,
 }
 
@@ -23,6 +24,7 @@ impl ExecutorActor {
         Self {
             client_config,
             job_handler_map: HashMap::new(),
+            job_id_map: HashMap::new(),
             server_access_actor: None,
         }
     }
@@ -38,6 +40,10 @@ impl ExecutorActor {
         job_context: JobContext,
         ctx: &mut Context<Self>,
     ) -> anyhow::Result<ExecutorActorResult> {
+        if !self.job_id_map.contains_key(&job_context.job_id) {
+            self.job_id_map
+                .insert(job_context.job_id.clone(), job_name.clone());
+        }
         let run_param = if let Some(handler_value) = self.job_handler_map.get_mut(&job_name) {
             if handler_value.is_running {
                 match &job_context.block_strategy {
@@ -143,6 +149,17 @@ impl ExecutorActor {
         };
         self.do_run_job(job, run_param, ctx);
     }
+
+    fn check_idle_beat(&mut self, job_id: u64) -> anyhow::Result<ExecutorActorResult> {
+        if let Some(name) = self.job_id_map.get(&job_id) {
+            if let Some(handler) = self.job_handler_map.get_mut(name) {
+                if handler.is_running || !handler.block_jobs.is_empty() {
+                    return Ok(ExecutorActorResult::JobRunning);
+                }
+            }
+        }
+        Ok(ExecutorActorResult::Ok)
+    }
 }
 
 impl Actor for ExecutorActor {
@@ -181,6 +198,7 @@ impl Handler<ExecutorActorReq> for ExecutorActor {
                 job_name,
                 job_content,
             } => self.run_job(job_name, job_content, ctx),
+            ExecutorActorReq::IdleBeat { job_id } => self.check_idle_beat(job_id),
         }
     }
 }

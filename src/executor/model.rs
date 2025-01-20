@@ -22,10 +22,14 @@ pub enum ExecutorActorReq {
         job_name: Arc<String>,
         job_content: JobContext,
     },
+    IdleBeat {
+        job_id: u64,
+    },
 }
 
 pub enum ExecutorActorResult {
     Ok,
     NotFoundJob,
     Discard,
+    JobRunning,
 }

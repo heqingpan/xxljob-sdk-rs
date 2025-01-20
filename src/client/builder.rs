@@ -80,19 +80,17 @@ impl XxlClientBuilder {
     }
 
     fn get_port(start_port: u16, option_port: Option<u16>) -> u16 {
-        let port = if let Some(port) = option_port {
-            if port == 0 {
-                let p = get_available_port(start_port);
-                log::info!("auto use port: {}", p);
-                p
-            } else {
-                port
-            }
+        let source_port = option_port.unwrap_or_default();
+        let port = if source_port == 0 {
+            get_available_port(start_port)
         } else {
-            let p = get_available_port(start_port);
-            log::info!("auto use port: {}", p);
-            p
+            get_available_port(source_port)
         };
+        if source_port != port {
+            log::info!("auto use port: {}", port);
+        } else {
+            log::info!("use set port: {}", source_port);
+        }
         port
     }
 }

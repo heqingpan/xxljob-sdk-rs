@@ -1,8 +1,8 @@
-use crate::common::model::api_model::JobRunParam;
+use crate::common::model::api_model::{JobIdleBeatParam, JobRunParam};
 use crate::common::model::handler::JobContext;
 use crate::common::model::{xxl_api_empty_success, XxlApiResult};
 use crate::common::share_data::ShareData;
-use crate::executor::model::ExecutorActorReq;
+use crate::executor::model::{ExecutorActorReq, ExecutorActorResult};
 use actix_web::web::Data;
 use actix_web::{web, HttpResponse, Responder};
 use std::sync::Arc;
@@ -11,9 +11,24 @@ pub(crate) async fn beat() -> impl Responder {
     HttpResponse::Ok().json(xxl_api_empty_success())
 }
 
-pub(crate) async fn idle_beat() -> impl Responder {
-    //todo check something
-    HttpResponse::Ok().json(xxl_api_empty_success())
+pub(crate) async fn idle_beat(
+    share_data: Data<Arc<ShareData>>,
+    web::Json(param): web::Json<JobIdleBeatParam>,
+) -> impl Responder {
+    log::info!("idle_beat api param:{:?}", &param);
+    if let Ok(Ok(ExecutorActorResult::Ok)) = share_data
+        .executor_actor
+        .send(ExecutorActorReq::IdleBeat {
+            job_id: param.job_id,
+        })
+        .await
+    {
+        HttpResponse::Ok().json(xxl_api_empty_success())
+    } else {
+        HttpResponse::Ok().json(XxlApiResult::<()>::fail(Some(
+            "job is running or has trigger queue.".to_string(),
+        )))
+    }
 }
 
 pub(crate) async fn run(
@@ -24,7 +39,7 @@ pub(crate) async fn run(
     let job_name = run_param.executor_handler.clone().unwrap_or_default();
     if job_name.is_empty() {
         return HttpResponse::Ok().json(XxlApiResult::<()>::fail(Some(format!(
-            "executor_handler is emtpy,log_id:{}",
+            "executor_handler is empty,log_id:{}",
             run_param.log_id
         ))));
     };
@@ -36,7 +51,8 @@ pub(crate) async fn run(
     HttpResponse::Ok().json(xxl_api_empty_success())
 }
 
-pub(crate) async fn kill() -> impl Responder {
+pub(crate) async fn kill(web::Json(param): web::Json<JobIdleBeatParam>) -> impl Responder {
+    log::info!("kill api param:{:?}", &param);
     //todo kill job
     HttpResponse::Ok().json(xxl_api_empty_success())
 }

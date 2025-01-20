@@ -18,3 +18,9 @@ pub struct JobRunParam {
     pub broadcast_index: Option<u64>,
     pub broadcast_total: Option<u64>,
 }
+
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct JobIdleBeatParam {
+    pub job_id: u64,
+}
