@@ -139,7 +139,10 @@ fn register_handle(handle_name: Arc<String>, job_handler: JobHandler) -> anyhow:
 
 
 
-## 完成例子
+## 例子
+
+例子完整依赖与代码可以参考 examples/下的代码。
+
 
 ```rust
 use async_trait::async_trait;
