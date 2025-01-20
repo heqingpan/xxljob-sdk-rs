@@ -30,6 +30,7 @@ impl XxlClientBuilder {
         }
     }
 
+    /// 设置访问token要与服务端的token一致
     pub fn set_access_token(mut self, access_token: String) -> Self {
         self.access_token = Some(access_token);
         self
@@ -74,6 +75,9 @@ impl XxlClientBuilder {
             log_path: Arc::new(self.log_path.unwrap_or_default()),
             log_retention_days: self.log_retention_days.unwrap_or_default(),
         });
+        if client_config.access_token.is_empty() {
+            log::warn!("api access_token is empty!");
+        }
         let client = build_client(client_config)?;
         set_last_xxl_client(client.clone());
         Ok(client)

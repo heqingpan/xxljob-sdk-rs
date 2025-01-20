@@ -1,4 +1,5 @@
 use crate::common::share_data::ShareData;
+use crate::server::middle::CheckMiddle;
 use crate::server::xxlapi;
 use actix::prelude::*;
 use actix_web::web::{Data, ServiceConfig};
@@ -22,7 +23,8 @@ pub async fn run_embed_web(share_data: Arc<ShareData>) -> anyhow::Result<()> {
     HttpServer::new(move || {
         let app_data = app_data.clone();
         App::new()
-            .app_data(app_data)
+            .app_data(app_data.clone())
+            .wrap(CheckMiddle::new(app_data.as_ref().clone()))
             .wrap(middleware::Logger::default())
             .configure(api_config)
     })

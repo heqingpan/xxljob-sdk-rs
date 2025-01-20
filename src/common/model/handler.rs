@@ -79,7 +79,7 @@ pub trait AsyncJobHandler: Send + Sync {
 
 /// 同步任务处理器；
 /// 每个任务起一个线程运行，CPU密集型任务推荐使用；
-/// 任务数量多后线程数量不可按，后续考虑支持放到线程池运行；
+/// 任务数量多后线程数量不可控，后续考虑支持放到线程池运行；
 pub trait SyncJobHandler: Send + Sync {
     fn process(&self, context: JobContext) -> anyhow::Result<JobContext>;
 }
@@ -93,7 +93,7 @@ pub enum JobHandler {
     Async(Arc<dyn AsyncJobHandler>),
     /// 同步任务处理器；
     /// 每个任务起一个线程运行，CPU密集型任务推荐使用；
-    /// 任务数量多后线程数量不可按，后续考虑支持放到线程池运行；
+    /// 任务数量多后线程数量不可控，后续考虑支持放到线程池运行；
     Sync(Arc<dyn SyncJobHandler>),
 }
 
