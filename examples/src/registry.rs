@@ -1,29 +1,56 @@
 use async_trait::async_trait;
 use std::sync::Arc;
 use xxljob_sdk_rs::client::builder::XxlClientBuilder;
-use xxljob_sdk_rs::common::model::handler::{JobContext, JobHandler};
+use xxljob_sdk_rs::common::model::handler::{
+    AsyncJobHandler, JobContext, JobHandler, SyncJobHandler,
+};
 
 pub struct DemoJobHandler;
 
 #[async_trait]
-impl JobHandler for DemoJobHandler {
+impl AsyncJobHandler for DemoJobHandler {
     async fn process(&self, context: JobContext) -> anyhow::Result<JobContext> {
         log::info!(
-            "DemoJobHandler job info; job_id:{}, log_id:{}, job_param:{:?}",
+            "async|DemoJobHandler job info; job_id:{}, log_id:{}, job_param:{:?}",
             &context.job_id,
             &context.log_id,
             &context.job_param
         );
-        for i in 0..15 {
+        for i in 0..10 {
             log::info!(
-                "test job do something... ; log_id:{}, step:{}",
+                "async|test job do something... ; log_id:{}, step:{}",
                 &context.log_id,
                 i
             );
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
         log::info!(
-            "DemoJobHandler job process done; job_id:{}, log_id:{}",
+            "async|DemoJobHandler job process done; job_id:{}, log_id:{}",
+            &context.job_id,
+            &context.log_id
+        );
+        Ok(context)
+    }
+}
+
+impl SyncJobHandler for DemoJobHandler {
+    fn process(&self, context: JobContext) -> anyhow::Result<JobContext> {
+        log::info!(
+            "sync|DemoJobHandler job info; job_id:{}, log_id:{}, job_param:{:?}",
+            &context.job_id,
+            &context.log_id,
+            &context.job_param
+        );
+        for i in 0..15 {
+            log::info!(
+                "sync|test job do something... ; log_id:{}, step:{}",
+                &context.log_id,
+                i
+            );
+            std::thread::sleep(std::time::Duration::from_secs(1));
+        }
+        log::info!(
+            "sync|DemoJobHandler job process done; job_id:{}, log_id:{}",
             &context.job_id,
             &context.log_id
         );
@@ -44,7 +71,8 @@ async fn main() -> anyhow::Result<()> {
             .build()?;
         client.register(
             Arc::new("demoJobHandler".to_owned()),
-            Arc::new(DemoJobHandler {}),
+            //JobHandler::Async(Arc::new(DemoJobHandler {})),
+            JobHandler::Sync(Arc::new(DemoJobHandler {})),
         )?;
         tokio::signal::ctrl_c()
             .await

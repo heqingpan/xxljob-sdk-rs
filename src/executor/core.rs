@@ -1,6 +1,6 @@
 use crate::common::client_config::ClientConfig;
 use crate::common::model::enum_type::ExecutorBlockStrategy;
-use crate::common::model::handler::{JobContext, JobHandlerRunParam, JobHandlerValue};
+use crate::common::model::handler::{JobContext, JobHandler, JobHandlerRunParam, JobHandlerValue};
 use crate::common::model::FAIL_CODE;
 use crate::executor::admin_server::{callback, ServerAccessActor};
 use crate::executor::model::{ExecutorActorReq, ExecutorActorResult};
@@ -82,31 +82,50 @@ impl ExecutorActor {
         let job_handler = job_handler_param.handler.clone();
         let job_name = job_handler_param.name.clone();
         let log_id = job_context.log_id.to_owned();
-        async move { (job_handler.process(job_context).await, job_name, log_id) }
-            .into_actor(self)
-            .map(|(r, job_name, log_id), act, ctx| {
-                match r {
-                    Ok(job) => {
-                        job.callback_success();
+
+        async move {
+            match job_handler {
+                JobHandler::Async(handler) => {
+                    (handler.process(job_context).await, job_name, log_id)
+                }
+                JobHandler::Sync(handler) => {
+                    let (tx, rx) = tokio::sync::oneshot::channel();
+                    std::thread::spawn(move || {
+                        let ctx = handler.process(job_context);
+                        tx.send(ctx).ok();
+                    });
+                    let res = match rx.await {
+                        Ok(v) => v,
+                        Err(e) => Err(anyhow::anyhow!(e)),
+                    };
+                    (res, job_name, log_id)
+                }
+            }
+        }
+        .into_actor(self)
+        .map(|(r, job_name, log_id), act, ctx| {
+            match r {
+                Ok(job) => {
+                    job.callback_success();
+                }
+                Err(err) => {
+                    //失败时取不到job对象，通过job_id反馈结果
+                    if let Some(addr) = act.server_access_actor.as_ref() {
+                        callback(addr, log_id.to_owned(), FAIL_CODE, Some(err.to_string()));
                     }
-                    Err(err) => {
-                        //失败时取不到job对象，通过job_id反馈结果
-                        if let Some(addr) = act.server_access_actor.as_ref() {
-                            callback(addr, log_id.to_owned(), FAIL_CODE, Some(err.to_string()));
-                        }
-                    }
-                };
-                if let Some(value) = act.job_handler_map.get_mut(&job_name) {
-                    if value.last_run_id == log_id {
-                        value.is_running = false;
-                        value.last_run_id = 0;
-                    }
-                    if !value.block_jobs.is_empty() {
-                        act.run_next_block_job(job_name, ctx);
-                    }
-                };
-            })
-            .spawn(ctx);
+                }
+            };
+            if let Some(value) = act.job_handler_map.get_mut(&job_name) {
+                if value.last_run_id == log_id {
+                    value.is_running = false;
+                    value.last_run_id = 0;
+                }
+                if !value.block_jobs.is_empty() {
+                    act.run_next_block_job(job_name, ctx);
+                }
+            };
+        })
+        .spawn(ctx);
     }
 
     fn run_next_block_job(&mut self, job_name: Arc<String>, ctx: &mut Context<Self>) {

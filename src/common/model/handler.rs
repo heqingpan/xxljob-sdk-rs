@@ -69,14 +69,72 @@ impl JobContext {
     }
 }
 
+/// 异步任务处理器；
+/// 常规任务、io密集型任务推荐使用；
+/// 只使用一个异步线程运行所有任务，不要在内容写同步堵塞线程逻辑；
 #[async_trait]
-pub trait JobHandler: Send + Sync {
+pub trait AsyncJobHandler: Send + Sync {
     async fn process(&self, context: JobContext) -> anyhow::Result<JobContext>;
+}
+
+/// 同步任务处理器；
+/// 每个任务起一个线程运行，CPU密集型任务推荐使用；
+/// 任务数量多后线程数量不可按，后续考虑支持放到线程池运行；
+pub trait SyncJobHandler: Send + Sync {
+    fn process(&self, context: JobContext) -> anyhow::Result<JobContext>;
+}
+
+/// 任务处理器；
+#[derive(Clone)]
+pub enum JobHandler {
+    /// 异步任务处理器；
+    /// 常规任务、io密集型任务推荐使用；
+    /// 只使用一个异步线程运行所有任务，不要在内容写同步堵塞线程逻辑；
+    Async(Arc<dyn AsyncJobHandler>),
+    /// 同步任务处理器；
+    /// 每个任务起一个线程运行，CPU密集型任务推荐使用；
+    /// 任务数量多后线程数量不可按，后续考虑支持放到线程池运行；
+    Sync(Arc<dyn SyncJobHandler>),
+}
+
+impl JobHandler {
+    pub fn is_async(&self) -> bool {
+        match self {
+            JobHandler::Async(_) => true,
+            JobHandler::Sync(_) => false,
+        }
+    }
+
+    pub fn get_async_handle(&self) -> Option<Arc<dyn AsyncJobHandler>> {
+        match self {
+            JobHandler::Async(h) => Some(h.clone()),
+            JobHandler::Sync(_) => None,
+        }
+    }
+
+    pub fn get_sync_handle(&self) -> Option<Arc<dyn SyncJobHandler>> {
+        match self {
+            JobHandler::Async(_) => None,
+            JobHandler::Sync(h) => Some(h.clone()),
+        }
+    }
+}
+
+impl From<Arc<dyn AsyncJobHandler>> for JobHandler {
+    fn from(value: Arc<dyn AsyncJobHandler>) -> Self {
+        Self::Async(value)
+    }
+}
+
+impl From<Arc<dyn SyncJobHandler>> for JobHandler {
+    fn from(value: Arc<dyn SyncJobHandler>) -> Self {
+        Self::Sync(value)
+    }
 }
 
 #[derive(Clone)]
 pub struct JobHandlerValue {
-    pub handler: Arc<dyn JobHandler>,
+    pub handler: JobHandler,
     pub name: Arc<String>,
     pub is_running: bool,
     pub last_run_id: u64,
@@ -85,12 +143,12 @@ pub struct JobHandlerValue {
 
 #[derive(Clone)]
 pub struct JobHandlerRunParam {
-    pub handler: Arc<dyn JobHandler>,
+    pub handler: JobHandler,
     pub name: Arc<String>,
 }
 
 impl JobHandlerValue {
-    pub fn new(name: Arc<String>, handler: Arc<dyn JobHandler>) -> Self {
+    pub fn new(name: Arc<String>, handler: JobHandler) -> Self {
         Self {
             handler,
             name,
