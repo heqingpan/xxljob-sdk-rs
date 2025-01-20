@@ -1,14 +1,14 @@
-use crate::client::client::XxlClient;
+use crate::client::client::{set_last_xxl_client, XxlClient};
 use crate::common::actor_utils::create_actor_at_thread;
 use crate::common::client_config::ClientConfig;
 use crate::common::ip_utils::{get_available_port, get_local_ip};
 use crate::common::share_data::ShareData;
 use crate::executor::admin_server::ServerAccessActor;
 use crate::executor::core::ExecutorActor;
-use crate::server::web_server::{run_embed_web, ServerRunner};
+use crate::server::web_server::ServerRunner;
 use actix::Actor;
 use actix_rt::System;
-use bean_factory::{BeanDefinition, BeanFactory, FactoryData};
+use bean_factory::{BeanDefinition, BeanFactory};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Default)]
@@ -59,7 +59,7 @@ impl XxlClientBuilder {
         self
     }
 
-    pub fn build(self) -> anyhow::Result<XxlClient> {
+    pub fn build(self) -> anyhow::Result<Arc<XxlClient>> {
         let start_port = 9900;
         let port = Self::get_port(start_port, self.port);
         if port == 0 {
@@ -74,7 +74,9 @@ impl XxlClientBuilder {
             log_path: Arc::new(self.log_path.unwrap_or_default()),
             log_retention_days: self.log_retention_days.unwrap_or_default(),
         });
-        build_client(client_config)
+        let client = build_client(client_config)?;
+        set_last_xxl_client(client.clone());
+        Ok(client)
     }
 
     fn get_port(start_port: u16, option_port: Option<u16>) -> u16 {
@@ -95,7 +97,7 @@ impl XxlClientBuilder {
     }
 }
 
-fn build_client(client_config: Arc<ClientConfig>) -> anyhow::Result<XxlClient> {
+fn build_client(client_config: Arc<ClientConfig>) -> anyhow::Result<Arc<XxlClient>> {
     let (tx, rx) = std::sync::mpsc::sync_channel(1);
     std::thread::spawn(move || {
         let rt = System::new();
@@ -109,21 +111,20 @@ fn build_client(client_config: Arc<ClientConfig>) -> anyhow::Result<XxlClient> {
 fn init_factory(client_config: Arc<ClientConfig>) -> anyhow::Result<BeanFactory> {
     let factory = BeanFactory::new();
     factory.register(BeanDefinition::actor_with_inject_from_obj(
-        ExecutorActor::new(client_config.clone()).start(),
+        //ExecutorActor::new(client_config.clone()).start(),
+        create_actor_at_thread(ExecutorActor::new(client_config.clone())),
     ));
     factory.register(BeanDefinition::actor_with_inject_from_obj(
         ServerRunner {}.start(),
-        //create_actor_at_thread(ServerRunner {}),
     ));
     factory.register(BeanDefinition::actor_with_inject_from_obj(
         ServerAccessActor::new(client_config.clone()).start(),
-        //create_actor_at_thread(ServerAccessActor::new(client_config.clone())),
     ));
     factory.register(BeanDefinition::from_obj(client_config.clone()));
     Ok(factory)
 }
 
-async fn async_init(client_config: Arc<ClientConfig>) -> anyhow::Result<XxlClient> {
+async fn async_init(client_config: Arc<ClientConfig>) -> anyhow::Result<Arc<XxlClient>> {
     let factory = init_factory(client_config.clone())?;
     let factory_data = factory.init().await;
     let share_data = Arc::new(ShareData {

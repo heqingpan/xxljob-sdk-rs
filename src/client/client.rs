@@ -1,29 +1,46 @@
 use crate::common::model::handler::{AsyncJobHandler, JobHandler, JobHandlerValue, SyncJobHandler};
 use crate::common::share_data::ShareData;
-use crate::executor::model::{ExecutorActorReq, ServerAccessActorReq};
-use std::sync::Arc;
+use crate::executor::model::ExecutorActorReq;
+use std::sync::{Arc, Mutex};
+
+lazy_static::lazy_static! {
+    static ref LAST_XXL_CLIENT: Mutex<Option<Arc<XxlClient>>> =  Mutex::new(None);
+}
+
+pub fn set_last_xxl_client(client: Arc<XxlClient>) {
+    if let Ok(mut r) = LAST_XXL_CLIENT.lock() {
+        *r = Some(client);
+    }
+}
+
+pub fn get_last_xxl_client() -> Option<Arc<XxlClient>> {
+    if let Ok(r) = LAST_XXL_CLIENT.lock() {
+        r.clone()
+    } else {
+        None
+    }
+}
 
 /// xxl-job sdk客户端
+#[derive(Clone)]
 pub struct XxlClient {
     pub(crate) share_data: Arc<ShareData>,
-    is_running: bool,
 }
 
 impl XxlClient {
-    pub(crate) fn new(share_data: Arc<ShareData>) -> XxlClient {
-        Self {
-            share_data,
-            is_running: false,
-        }
+    pub(crate) fn new(share_data: Arc<ShareData>) -> Arc<XxlClient> {
+        Arc::new(Self { share_data })
     }
 
-    pub async fn stop(self) -> anyhow::Result<()> {
+    /*
+    pub async fn stop(&self) -> anyhow::Result<()> {
         self.share_data
             .server_access_actor
             .send(ServerAccessActorReq::Stop)
             .await??;
         Ok(())
     }
+    */
 
     /// 注册任务
     pub fn register(&self, job_name: Arc<String>, job_handler: JobHandler) -> anyhow::Result<()> {

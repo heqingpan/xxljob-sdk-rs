@@ -1,3 +1,4 @@
+#![allow(unused_variables, dead_code)]
 use crate::common::client_config::ClientConfig;
 use crate::common::model::enum_type::ExecutorBlockStrategy;
 use crate::common::model::handler::{JobContext, JobHandler, JobHandlerRunParam, JobHandlerValue};

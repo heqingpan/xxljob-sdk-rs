@@ -1,10 +1,8 @@
-use crate::common::model::admin_request::CallbackParam;
 use crate::common::model::api_model::JobRunParam;
 use crate::common::model::handler::JobContext;
-use crate::common::model::{xxl_api_empty_success, XxlApiResult, SUCCESS_CODE};
-use crate::common::now_millis_i64;
+use crate::common::model::{xxl_api_empty_success, XxlApiResult};
 use crate::common::share_data::ShareData;
-use crate::executor::model::{ExecutorActorReq, ServerAccessActorReq};
+use crate::executor::model::ExecutorActorReq;
 use actix_web::web::Data;
 use actix_web::{web, HttpResponse, Responder};
 use std::sync::Arc;

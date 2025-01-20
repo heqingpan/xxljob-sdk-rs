@@ -38,7 +38,7 @@ impl ServerAccessActor {
         let client = self.admin_client.clone();
         async move { client.registry().await }
             .into_actor(self)
-            .map(|_res, act, ctx| {})
+            .map(|_res, _act, _ctx| {})
             .spawn(ctx);
     }
 
@@ -65,7 +65,7 @@ impl ServerAccessActor {
 impl Actor for ServerAccessActor {
     type Context = Context<Self>;
 
-    fn started(&mut self, ctx: &mut Self::Context) {
+    fn started(&mut self, _ctx: &mut Self::Context) {
         log::info!("ServerAccessActor started");
     }
 

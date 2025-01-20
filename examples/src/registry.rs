@@ -1,9 +1,7 @@
 use async_trait::async_trait;
 use std::sync::Arc;
-use xxljob_sdk_rs::client::builder::XxlClientBuilder;
-use xxljob_sdk_rs::common::model::handler::{
-    AsyncJobHandler, JobContext, JobHandler, SyncJobHandler,
-};
+use xxljob_sdk_rs::{get_last_xxl_client, XxlClientBuilder};
+use xxljob_sdk_rs::{AsyncJobHandler, JobContext, JobHandler, SyncJobHandler};
 
 pub struct DemoJobHandler;
 
@@ -71,15 +69,30 @@ async fn main() -> anyhow::Result<()> {
             .build()?;
         client.register(
             Arc::new("demoJobHandler".to_owned()),
+            JobHandler::Async(Arc::new(DemoJobHandler {})),
+            //JobHandler::Sync(Arc::new(DemoJobHandler {})),
+        )?;
+
+        register_handle(
+            Arc::new("demoJobHandler2".to_owned()),
             //JobHandler::Async(Arc::new(DemoJobHandler {})),
             JobHandler::Sync(Arc::new(DemoJobHandler {})),
         )?;
+
         tokio::signal::ctrl_c()
             .await
             .expect("failed to listen for event");
-        //executor unregister
-        client.stop().await?;
     }
+    // wait for unregister
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     Ok(())
+}
+
+fn register_handle(handle_name: Arc<String>, job_handler: JobHandler) -> anyhow::Result<()> {
+    // 获取最近构建的xxl_client全局对象,方便支持构建与注册解耦；
+    if let Some(client) = get_last_xxl_client() {
+        client.register(handle_name, job_handler)
+    } else {
+        Err(anyhow::anyhow!("failed to get client"))
+    }
 }

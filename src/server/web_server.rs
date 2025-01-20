@@ -40,7 +40,7 @@ pub struct ServerRunner {}
 impl Actor for ServerRunner {
     type Context = Context<Self>;
 
-    fn started(&mut self, ctx: &mut Self::Context) {
+    fn started(&mut self, _ctx: &mut Self::Context) {
         log::info!("server started");
     }
 }
@@ -61,7 +61,7 @@ impl Inject for ServerRunner {
         });
         run_embed_web(share_data)
             .into_actor(self)
-            .map(|res, act, ctx| {})
+            .map(|_res, _act, _ctx| {})
             .spawn(ctx);
         log::info!("api server running");
     }
