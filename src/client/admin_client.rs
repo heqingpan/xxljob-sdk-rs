@@ -1,8 +1,8 @@
 use crate::common::client_config::ClientConfig;
-use crate::common::constant;
 use crate::common::http_utils::{HttpUtils, ResponseWrap};
 use crate::common::model::admin_request::{CallbackParam, RegistryParam};
 use crate::common::model::XxlApiResult;
+use crate::common::{constant, get_app_version};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -32,6 +32,11 @@ impl AdminClient {
                 "XXL-JOB-ACCESS-TOKEN".to_owned(),
                 client_config.access_token.as_ref().clone(),
             );
+            headers.insert("Content-Type".to_owned(), "application/json".to_owned());
+            headers.insert(
+                "User-Agent".to_owned(),
+                format!("xxljob-sdk-rs/{}", get_app_version()),
+            );
         }
         Ok(Self {
             client,
@@ -52,8 +57,16 @@ impl AdminClient {
             registry_value: Arc::new(address),
         };
         let body = serde_json::to_vec(&param)?;
-        log::info!("admin_client|registry");
-        self.request(body, "registry").await
+        match self.request(body, "registry").await {
+            Ok(_) => {
+                log::info!("admin_client|registry success");
+                Ok(())
+            }
+            Err(e) => {
+                log::error!("admin_client|registry error:{}", &e);
+                Err(e)
+            }
+        }
     }
 
     pub async fn registry_remove(&self) -> anyhow::Result<()> {
@@ -67,14 +80,30 @@ impl AdminClient {
             registry_value: Arc::new(address),
         };
         let body = serde_json::to_vec(&param)?;
-        log::info!("admin_client|registryRemove");
-        self.request(body, "registryRemove").await
+        match self.request(body, "registryRemove").await {
+            Ok(_) => {
+                log::info!("admin_client|registryRemove success");
+                Ok(())
+            }
+            Err(e) => {
+                log::error!("admin_client|registryRemove error:{}", &e);
+                Err(e)
+            }
+        }
     }
 
     pub async fn callback(&self, params: Vec<CallbackParam>) -> anyhow::Result<()> {
         let body = serde_json::to_vec(&params)?;
-        log::info!("admin_client|callback");
-        self.request(body, "callback").await
+        match self.request(body, "callback").await {
+            Ok(_) => {
+                log::info!("admin_client|callback success");
+                Ok(())
+            }
+            Err(e) => {
+                log::error!("admin_client|callback error:{}", &e);
+                Err(e)
+            }
+        }
     }
 
     async fn request(&self, body: Vec<u8>, sub_url: &str) -> anyhow::Result<()> {
