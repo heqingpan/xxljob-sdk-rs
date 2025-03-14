@@ -40,10 +40,7 @@ impl ExecutorActor {
         job_context: JobContext,
         ctx: &mut Context<Self>,
     ) -> anyhow::Result<ExecutorActorResult> {
-        if !self.job_id_map.contains_key(&job_context.job_id) {
-            self.job_id_map
-                .insert(job_context.job_id.clone(), job_name.clone());
-        }
+        self.job_id_map.entry(job_context.job_id).or_insert_with(|| job_name.clone());
         let run_param = if let Some(handler_value) = self.job_handler_map.get_mut(&job_name) {
             if handler_value.is_running {
                 match &job_context.block_strategy {

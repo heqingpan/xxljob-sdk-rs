@@ -13,7 +13,14 @@ rust实现的xxl-job sdk客户端。
 
 ```
 [dependencies]
-xxljob-sdk-rs = "0.1.1"
+xxljob-sdk-rs = "0.1"
+```
+
+如果服务端是https,可以开启对应ssl的features支持
+
+```
+# 支持 rustls-tls/native-tls
+xxljob-sdk-rs = { version = "0.1", features = ["rustls-tls"]}
 ```
 
 #### 2. 创建客户端

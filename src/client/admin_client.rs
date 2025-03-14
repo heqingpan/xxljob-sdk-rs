@@ -25,7 +25,13 @@ impl AdminClient {
             .filter(|&v| !v.is_empty())
             .map(|v| v.to_owned())
             .collect();
-        let client = reqwest::Client::new();
+        let mut client_builder = reqwest::ClientBuilder::new();
+        #[cfg(feature = "ssl_mode")]
+        if client_config.ssl_danger_accept_invalid_certs {
+            client_builder = client_builder.danger_accept_invalid_certs(true);
+        }
+        client_builder = client_builder.timeout(std::time::Duration::from_millis(3000));
+        let client = client_builder.build()?;
         let mut headers = HashMap::new();
         if !client_config.access_token.is_empty() {
             headers.insert(
@@ -92,8 +98,8 @@ impl AdminClient {
         }
     }
 
-    pub async fn callback(&self, params: Vec<CallbackParam>) -> anyhow::Result<()> {
-        let body = serde_json::to_vec(&params)?;
+    pub async fn callback(&self, params: &Vec<CallbackParam>) -> anyhow::Result<()> {
+        let body = serde_json::to_vec(params)?;
         match self.request(body, "callback").await {
             Ok(_) => {
                 log::info!("admin_client|callback success");

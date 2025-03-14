@@ -9,6 +9,7 @@ pub struct ClientConfig {
     pub port: u16,
     pub log_path: Arc<String>,
     pub log_retention_days: u32,
+    pub ssl_danger_accept_invalid_certs: bool,
 }
 
 impl ClientConfig {

@@ -18,6 +18,7 @@ impl GlueType {
     ///     GLUE_PHP,
     ///     GLUE_NODEJS,
     ///     GLUE_POWERSHELL,
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(glue_type: &str) -> Option<GlueType> {
         match glue_type {
             "BEAN" => Some(GlueType::Bean),
@@ -44,10 +45,7 @@ impl GlueType {
     }
 
     pub fn is_script(&self) -> bool {
-        match self {
-            GlueType::Bean | GlueType::GlueGroovy => false,
-            _ => true,
-        }
+        !matches!(self, GlueType::Bean | GlueType::GlueGroovy)
     }
 
     pub fn get_cmd(&self) -> &str {
@@ -82,6 +80,7 @@ pub enum ExecutorBlockStrategy {
 }
 
 impl ExecutorBlockStrategy {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> ExecutorBlockStrategy {
         match s {
             "SERIAL_EXECUTION" => ExecutorBlockStrategy::SerialExecution,

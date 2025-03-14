@@ -20,6 +20,7 @@ pub struct XxlClientBuilder {
     port: Option<u16>,
     log_path: Option<String>,
     log_retention_days: Option<u32>,
+    ssl_danger_accept_invalid_certs: Option<bool>,
 }
 
 impl XxlClientBuilder {
@@ -60,6 +61,14 @@ impl XxlClientBuilder {
         self
     }
 
+    pub fn set_ssl_danger_accept_invalid_certs(
+        mut self,
+        ssl_danger_accept_invalid_certs: bool,
+    ) -> Self {
+        self.ssl_danger_accept_invalid_certs = Some(ssl_danger_accept_invalid_certs);
+        self
+    }
+
     pub fn build(self) -> anyhow::Result<Arc<XxlClient>> {
         let start_port = 9900;
         let port = Self::get_port(start_port, self.port);
@@ -74,6 +83,7 @@ impl XxlClientBuilder {
             port,
             log_path: Arc::new(self.log_path.unwrap_or_default()),
             log_retention_days: self.log_retention_days.unwrap_or_default(),
+            ssl_danger_accept_invalid_certs: self.ssl_danger_accept_invalid_certs.unwrap_or(true),
         });
         if client_config.access_token.is_empty() {
             log::warn!("api access_token is empty!");

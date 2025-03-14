@@ -55,10 +55,17 @@ impl ServerAccessActor {
 
     fn callback(&self, params: Vec<CallbackParam>, ctx: &mut Context<Self>) {
         let client = self.admin_client.clone();
-        async move { client.callback(params).await }
-            .into_actor(self)
-            .map(|_res, _act, _ctx| {})
-            .spawn(ctx);
+        async move {
+            let mut i = 2u16;
+            //失败最多尝试重试10次
+            while i < 12u16 && client.callback(&params).await.is_err() {
+                tokio::time::sleep(Duration::from_secs((i * i) as u64)).await;
+                i += 1;
+            }
+        }
+        .into_actor(self)
+        .map(|_res, _act, _ctx| {})
+        .spawn(ctx);
     }
 }
 

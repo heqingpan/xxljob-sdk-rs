@@ -32,10 +32,7 @@ pub async fn async_get_available_port(start_port: u16) -> u16 {
 }
 
 pub async fn async_check_port_available(ip: Ipv4Addr, port: u16) -> bool {
-    match TcpListener::bind((ip, port)).await {
-        Ok(_) => true,
-        Err(_) => false,
-    }
+    TcpListener::bind((ip, port)).await.is_ok()
 }
 
 pub fn get_available_port(start_port: u16) -> u16 {

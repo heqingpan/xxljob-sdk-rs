@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-xxljob-sdk-rs = {path = ".."}
+xxljob-sdk-rs = {path = "..",features = ["rustls-tls"]}
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 serde_urlencoded = "0.6.1"
