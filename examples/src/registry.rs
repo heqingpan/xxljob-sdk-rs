@@ -14,6 +14,7 @@ impl AsyncJobHandler for DemoJobHandler {
             &context.log_id,
             &context.job_param
         );
+        /*
         for i in 0..10 {
             log::info!(
                 "async|test job do something... ; log_id:{}, step:{}",
@@ -22,6 +23,8 @@ impl AsyncJobHandler for DemoJobHandler {
             );
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
+         */
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         log::info!(
             "async|DemoJobHandler job process done; job_id:{}, log_id:{}",
             &context.job_id,
@@ -62,7 +65,8 @@ async fn main() -> anyhow::Result<()> {
     env_logger::init();
     log::info!("registry start");
     {
-        let client = XxlClientBuilder::new("http://127.0.0.1:8080/xxl-job-admin".to_string())
+        //let client = XxlClientBuilder::new("http://127.0.0.1:8073/xxl-job-admin".to_string())
+        let client = XxlClientBuilder::new("http://127.0.0.1:8081/xxl-job-admin".to_string())
             .set_access_token("default_token".to_string())
             .set_log_path("xxl-rs-logs".to_string())
             .set_app_name("xxl-job-executor-sample".to_string())

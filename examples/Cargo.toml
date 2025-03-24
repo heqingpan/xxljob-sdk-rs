@@ -21,5 +21,9 @@ name = "registry"
 path = "src/registry.rs"
 
 [[example]]
+name = "multi_registry"
+path = "src/multi_registry.rs"
+
+[[example]]
 name = "auto_local_addr"
 path = "src/auto_local_addr.rs"
