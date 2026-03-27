@@ -9,6 +9,7 @@ use crate::server::web_server::ServerRunner;
 use actix::Actor;
 use actix_rt::System;
 use bean_factory::{BeanDefinition, BeanFactory};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Default)]
@@ -21,6 +22,7 @@ pub struct XxlClientBuilder {
     log_path: Option<String>,
     log_retention_days: Option<u32>,
     ssl_danger_accept_invalid_certs: Option<bool>,
+    extra_headers: HashMap<String, String>,
 }
 
 impl XxlClientBuilder {
@@ -69,6 +71,16 @@ impl XxlClientBuilder {
         self
     }
 
+    pub fn add_header(mut self, key: String, value: String) -> Self {
+        self.extra_headers.insert(key, value);
+        self
+    }
+
+    pub fn set_headers(mut self, headers: HashMap<String, String>) -> Self {
+        self.extra_headers = headers;
+        self
+    }
+
     pub fn build(self) -> anyhow::Result<Arc<XxlClient>> {
         let start_port = 9900;
         let port = Self::get_port(start_port, self.port);
@@ -84,6 +96,7 @@ impl XxlClientBuilder {
             log_path: Arc::new(self.log_path.unwrap_or_default()),
             log_retention_days: self.log_retention_days.unwrap_or_default(),
             ssl_danger_accept_invalid_certs: self.ssl_danger_accept_invalid_certs.unwrap_or(true),
+            extra_headers: Arc::new(self.extra_headers),
         });
         if client_config.access_token.is_empty() {
             log::warn!("api access_token is empty!");
