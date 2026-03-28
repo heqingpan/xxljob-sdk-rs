@@ -32,6 +32,7 @@ let client = XxlClientBuilder::new("http://127.0.0.1:8080/xxl-job-admin".to_stri
         .set_access_token("default_token".to_string())
         .set_log_path("xxl-rs-logs".to_string())
         .set_app_name("xxl-job-executor-sample".to_string())
+        .add_header("X-Gateway-Token".to_string(), "my-token".to_string()) // 可选，添加自定义请求头
         .build()?;
 ```
 

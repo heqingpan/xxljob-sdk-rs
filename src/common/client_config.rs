@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Default)]
@@ -10,6 +11,7 @@ pub struct ClientConfig {
     pub log_path: Arc<String>,
     pub log_retention_days: u32,
     pub ssl_danger_accept_invalid_certs: bool,
+    pub extra_headers: Arc<HashMap<String, String>>,
 }
 
 impl ClientConfig {

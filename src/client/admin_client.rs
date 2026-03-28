@@ -44,6 +44,9 @@ impl AdminClient {
                 format!("xxljob-sdk-rs/{}", get_app_version()),
             );
         }
+        for (k, v) in client_config.extra_headers.iter() {
+            headers.insert(k.clone(), v.clone());
+        }
         Ok(Self {
             client,
             addrs,
