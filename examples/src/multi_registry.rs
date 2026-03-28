@@ -32,12 +32,12 @@ impl AsyncJobHandler for DemoJobHandler {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    //std::env::set_var("RUST_LOG", "INFO");
-    std::env::set_var("RUST_LOG", "error");
+    std::env::set_var("RUST_LOG", "INFO");
+    //std::env::set_var("RUST_LOG", "error");
     env_logger::init();
     log::info!("registry start");
     let admin_url =
-        std::env::var("ADMIN_URL").unwrap_or("http://127.0.0.1:8081/xxl-job-admin".to_string());
+        std::env::var("ADMIN_URL").unwrap_or("http://127.0.0.1:8725/xxl-job-admin".to_string());
     let client_count = std::env::var("CLIENT_COUNT")
         .unwrap_or_default()
         .parse()

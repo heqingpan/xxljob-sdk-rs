@@ -65,8 +65,7 @@ async fn main() -> anyhow::Result<()> {
     env_logger::init();
     log::info!("registry start");
     {
-        //let client = XxlClientBuilder::new("http://127.0.0.1:8073/xxl-job-admin".to_string())
-        let client = XxlClientBuilder::new("http://127.0.0.1:8081/xxl-job-admin".to_string())
+        let client = XxlClientBuilder::new("http://127.0.0.1:8725/xxl-job-admin".to_string())
             .set_access_token("default_token".to_string())
             .set_log_path("xxl-rs-logs".to_string())
             .set_app_name("xxl-job-executor-sample".to_string())
